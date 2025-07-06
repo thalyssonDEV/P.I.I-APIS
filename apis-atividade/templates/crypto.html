@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitor de Criptomoedas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #67e8f9;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="bg-slate-900 text-white min-h-screen">
+
+    <main class="container mx-auto p-4 md:p-8">
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <a href="/" class="text-cyan-400 hover:text-cyan-300">&larr; Voltar ao Início</a>
+                <h1 class="text-4xl font-bold">Top 10 Criptomoedas</h1>
+                <p class="text-slate-400">Dados de mercado atualizados via CoinGecko.</p>
+            </div>
+            <button id="refresh-button" class="bg-cyan-500 hover:bg-cyan-600 text-slate-900 font-bold py-2 px-4 rounded-lg transition-transform transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed min-w-[120px]">
+                Atualizar
+            </button>
+        </div>
+
+        <div id="container" class="min-h-[50vh] flex items-center justify-center">
+            <div id="spinner" class="spinner"></div>
+            <div id="error-message" class="text-red-400 font-semibold hidden"></div>
+            <div id="rate-limit-error" class="hidden text-center bg-slate-800 p-8 rounded-lg shadow-xl">
+                <div class="text-5xl mb-4">⏱️</div>
+                <h2 class="text-2xl font-bold text-yellow-400 mb-2">Limite de Requisições Atingido</h2>
+                <p id="rate-limit-detail" class="text-slate-300 max-w-md"></p>
+            </div>
+            <div id="crypto-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 w-full hidden"></div>
+        </div>
+    </main>
+
+    <script>
+        const container = document.getElementById('container');
+        const spinner = document.getElementById('spinner');
+        const errorMessage = document.getElementById('error-message');
+        const rateLimitErrorDiv = document.getElementById('rate-limit-error');
+        const rateLimitDetail = document.getElementById('rate-limit-detail');
+        const cryptoGrid = document.getElementById('crypto-grid');
+        const refreshButton = document.getElementById('refresh-button');
+        let countdownInterval; // Variável para guardar nosso timer
+
+        function formatCurrency(value) {
+            return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        }
+
+        // --- NOVA FUNÇÃO: INICIA O CONTADOR REGRESSIVO ---
+        function startCountdown(seconds) {
+            // Limpa qualquer timer anterior para evitar múltiplos contadores
+            clearInterval(countdownInterval); 
+
+            let counter = seconds;
+            refreshButton.textContent = `Aguarde ${counter}s`;
+
+            countdownInterval = setInterval(() => {
+                counter--;
+                refreshButton.textContent = `Aguarde ${counter}s`;
+                if (counter <= 0) {
+                    clearInterval(countdownInterval); // Para o timer
+                    refreshButton.disabled = false;    // Reabilita o botão
+                    refreshButton.textContent = 'Atualizar'; // Restaura o texto original
+                    rateLimitErrorDiv.classList.add('hidden'); // Esconde a mensagem de erro
+                }
+            }, 1000); // Executa a cada 1 segundo
+        }
+
+        async function fetchCryptoData() {
+            // Reset UI
+            cryptoGrid.classList.add('hidden');
+            errorMessage.classList.add('hidden');
+            rateLimitErrorDiv.classList.add('hidden');
+            spinner.classList.remove('hidden');
+            refreshButton.disabled = true;
+
+            try {
+                const response = await fetch('/api/crypto');
+                
+                if (!response.ok) {
+                    if (response.status === 429) {
+                        const errorData = await response.json();
+                        rateLimitDetail.textContent = errorData.detail;
+                        rateLimitErrorDiv.classList.remove('hidden');
+                        // --- A MÁGICA ACONTECE AQUI ---
+                        // Inicia o contador de 60 segundos no botão
+                        startCountdown(60); 
+                    } else {
+                        throw new Error('Não foi possível carregar os dados. Ocorreu um erro no servidor.');
+                    }
+                    return; 
+                }
+
+                const coins = await response.json();
+                cryptoGrid.innerHTML = ''; 
+
+                coins.forEach(coin => {
+                    const priceChange = coin.price_change_percentage_24h;
+                    const priceChangeClass = priceChange >= 0 ? 'text-green-400' : 'text-red-400';
+                    const priceChangeSymbol = priceChange >= 0 ? '▲' : '▼';
+
+                    cryptoGrid.innerHTML += `
+                        <div class="bg-slate-800 p-5 rounded-xl shadow-lg flex flex-col justify-between">
+                            <div>
+                                <div class="flex items-center gap-4 mb-4">
+                                    <img src="${coin.image}" alt="${coin.name}" class="w-12 h-12">
+                                    <div>
+                                        <h2 class="text-2xl font-bold">${coin.name}</h2>
+                                        <p class="text-slate-400 uppercase">${coin.symbol}</p>
+                                    </div>
+                                </div>
+                                <div class="text-3xl font-light mb-2">${formatCurrency(coin.current_price)}</div>
+                                <div class="flex justify-between items-baseline mb-4">
+                                    <span class="text-lg">Variação 24h:</span>
+                                    <span class="${priceChangeClass} font-semibold">${priceChangeSymbol} ${priceChange.toFixed(2)}%</span>
+                                </div>
+                            </div>
+                            <div class="text-sm text-slate-500 border-t border-slate-700 pt-3">
+                                <p><strong>Cap. Mercado:</strong> ${formatCurrency(coin.market_cap)}</p>
+                            </div>
+                        </div>
+                    `;
+                });
+                cryptoGrid.classList.remove('hidden');
+
+            } catch (error) {
+                errorMessage.textContent = error.message;
+                errorMessage.classList.remove('hidden');
+            } finally {
+                spinner.classList.add('hidden');
+                // A reabilitação do botão agora é controlada pela função de countdown,
+                // então só reabilitamos aqui se não houver erro de rate limit.
+                if (rateLimitErrorDiv.classList.contains('hidden')) {
+                    refreshButton.disabled = false;
+                }
+            }
+        }
+
+        refreshButton.addEventListener('click', fetchCryptoData);
+        document.addEventListener('DOMContentLoaded', fetchCryptoData);
+    </script>
+</body>
+</html>

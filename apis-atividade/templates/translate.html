@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API de Tradução Bidirecional</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-white flex items-center justify-center min-h-screen">
+
+    <main class="w-full max-w-4xl mx-auto p-4">
+        <a href="/" class="text-cyan-400 hover:text-cyan-300 mb-6 inline-block">&larr; Voltar ao Início</a>
+        
+        <h1 class="text-3xl font-bold mb-4 text-center">Tradutor Bidirecional</h1>
+        <p class="text-slate-400 mb-8 text-center">Escolha os idiomas, digite o texto e traduza em qualquer direção.</p>
+        
+        <div class="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-4 items-center">
+            
+            <div class="flex flex-col gap-2">
+                <select id="source-lang" class="bg-slate-700 text-white p-2 rounded-lg border-2 border-slate-600 focus:border-cyan-400 focus:outline-none w-full">
+                    <option value="pt-br">Português (BR)</option>
+                    <option value="en">Inglês</option>
+                    <option value="es">Espanhol</option>
+                    <option value="fr">Francês</option>
+                    <option value="de">Alemão</option>
+                    <option value="ja">Japonês</option>
+                </select>
+                <textarea id="text-input" rows="8" placeholder="Digite o texto aqui..." class="w-full bg-slate-800 text-white placeholder-slate-500 p-3 rounded-lg border-2 border-slate-700 focus:border-cyan-400 focus:outline-none resize-none"></textarea>
+            </div>
+
+            <div class="text-center">
+                <button id="swap-button" title="Inverter idiomas" class="p-3 rounded-full bg-slate-700 hover:bg-cyan-500 hover:text-slate-900 transition-all duration-300">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                    </svg>
+                </button>
+            </div>
+
+            <div class="flex flex-col gap-2">
+                <select id="target-lang" class="bg-slate-700 text-white p-2 rounded-lg border-2 border-slate-600 focus:border-cyan-400 focus:outline-none w-full">
+                    <option value="en">Inglês</option>
+                    <option value="es">Espanhol</option>
+                    <option value="fr">Francês</option>
+                    <option value="de">Alemão</option>
+                    <option value="ja">Japonês</option>
+                    <option value="pt-br">Português (BR)</option>
+                </select>
+                <div id="result-box" class="w-full h-full bg-slate-800 p-3 rounded-lg border-2 border-slate-700 min-h-[224px]">
+                    <p id="result-text" class="text-slate-300"></p>
+                    <p id="loading-text" class="text-slate-500 hidden">Traduzindo...</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center mt-6">
+            <button id="translate-button" class="bg-cyan-500 hover:bg-cyan-600 text-slate-900 font-bold py-3 px-8 rounded-lg transition-transform transform hover:scale-105">
+                Traduzir
+            </button>
+        </div>
+    </main>
+
+    <script>
+        // Elementos da UI
+        const textInput = document.getElementById('text-input');
+        const sourceLangSelect = document.getElementById('source-lang');
+        const targetLangSelect = document.getElementById('target-lang');
+        const swapButton = document.getElementById('swap-button');
+        const translateButton = document.getElementById('translate-button');
+        const resultText = document.getElementById('result-text');
+        const loadingText = document.getElementById('loading-text');
+
+        // Função para traduzir
+        async function translateText() {
+            const text = textInput.value.trim();
+            const sourceLang = sourceLangSelect.value;
+            const targetLang = targetLangSelect.value;
+
+            if (!text) {
+                resultText.textContent = "Por favor, digite algo para traduzir.";
+                resultText.classList.add('text-red-400');
+                return;
+            }
+             if (sourceLang === targetLang) {
+                resultText.textContent = "O idioma de origem e destino não podem ser iguais.";
+                resultText.classList.add('text-yellow-400');
+                return;
+            }
+
+            // UI feedback de carregamento
+            resultText.textContent = '';
+            resultText.classList.remove('text-red-400', 'text-yellow-400');
+            loadingText.classList.remove('hidden');
+            translateButton.disabled = true;
+
+            try {
+                // Chama nosso back-end, que agora aceita os dois idiomas
+                const response = await fetch(`/api/translate?text=${encodeURIComponent(text)}&source_lang=${sourceLang}&target_lang=${targetLang}`);
+                if (!response.ok) throw new Error('Erro na tradução. Verifique o console.');
+
+                const data = await response.json();
+                
+                if (data.responseData && data.responseData.translatedText) {
+                    resultText.textContent = data.responseData.translatedText;
+                } else {
+                    // A API MyMemory às vezes retorna uma nota em vez do texto quando não consegue traduzir
+                    resultText.textContent = data.responseData.match || "Não foi possível traduzir.";
+                }
+
+            } catch (error) {
+                resultText.textContent = error.message;
+                resultText.classList.add('text-red-400');
+            } finally {
+                loadingText.classList.add('hidden');
+                translateButton.disabled = false;
+            }
+        }
+
+        // Função para inverter os idiomas e textos
+        function swapLanguages() {
+            // Inverte os valores dos selects
+            const tempLang = sourceLangSelect.value;
+            sourceLangSelect.value = targetLangSelect.value;
+            targetLangSelect.value = tempLang;
+
+            // Inverte os textos das caixas
+            const tempText = textInput.value;
+            textInput.value = resultText.textContent;
+            resultText.textContent = tempText;
+        }
+
+        // Adiciona os event listeners
+        translateButton.addEventListener('click', translateText);
+        swapButton.addEventListener('click', swapLanguages);
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hub de APIs</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-white flex items-center justify-center min-h-screen">
+
+    <main class="text-center p-4">
+        <h1 class="text-4xl md:text-5xl font-bold mb-4 text-cyan-400">Hub de Demonstração de APIs</h1>
+        <p class="text-lg text-slate-400 mb-12">Clique em um card para testar uma das APIs integradas.</p>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
+            
+            <a href="/weather" class="bg-slate-800 p-8 rounded-xl shadow-lg hover:bg-slate-700 hover:scale-105 transition-transform duration-300 transform">
+                <div class="text-6xl mb-4">🌦️</div>
+                <h2 class="text-2xl font-semibold text-white mb-2">Clima em Tempo Real</h2>
+                <p class="text-slate-400">Consulte o clima de qualquer cidade usando a OpenWeatherMap.</p>
+            </a>
+
+            <a href="/cat" class="bg-slate-800 p-8 rounded-xl shadow-lg hover:bg-slate-700 hover:scale-105 transition-transform duration-300 transform">
+                <div class="text-6xl mb-4">🐈</div>
+                <h2 class="text-2xl font-semibold text-white mb-2">Gerador de Gatos</h2>
+                <p class="text-slate-400">Receba uma imagem aleatória de um gato a cada clique.</p>
+            </a>
+
+            <a href="/translate" class="bg-slate-800 p-8 rounded-xl shadow-lg hover:bg-slate-700 hover:scale-105 transition-transform duration-300 transform">
+                <div class="text-6xl mb-4">🌐</div>
+                <h2 class="text-2xl font-semibold text-white mb-2">Tradutor Simples</h2>
+                <p class="text-slate-400">Traduza textos de Português para outros idiomas.</p>
+            </a>
+            
+            <a href="/crypto" class="bg-slate-800 p-8 rounded-xl shadow-lg hover:bg-slate-700 hover:scale-105 transition-transform duration-300 transform">
+                <div class="text-6xl mb-4">🪙</div>
+                <h2 class="text-2xl font-semibold text-white mb-2">Monitor de Criptos</h2>
+                <p class="text-slate-400">Veja o Top 10 de criptomoedas em tempo real.</p>
+            </a>
+
+        </div>
+    </main>
+
+</body>
+</html>

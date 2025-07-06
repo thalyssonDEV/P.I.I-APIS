@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API de Clima</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Animação simples para o spinner */
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #67e8f9; /* cyan-300 */
+            width: 40px;
+            height: 40px;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-white flex items-center justify-center min-h-screen">
+
+    <main class="w-full max-w-md mx-auto p-4 bg-slate-800 rounded-2xl shadow-2xl">
+        <a href="/" class="text-cyan-400 hover:text-cyan-300 mb-6 inline-block">&larr; Voltar ao Início</a>
+        
+        <h1 class="text-3xl font-bold mb-4 text-center">Consulta de Clima</h1>
+        <p class="text-slate-400 mb-6 text-center">Digite o nome de uma cidade para ver o clima em tempo real.</p>
+        
+        <form id="weather-form" class="flex gap-2 mb-6">
+            <input type="text" id="city-input" placeholder="Ex: Teresina" class="flex-grow bg-slate-700 text-white placeholder-slate-400 p-3 rounded-lg border-2 border-slate-600 focus:border-cyan-400 focus:outline-none transition">
+            <button type="submit" class="bg-cyan-500 hover:bg-cyan-600 text-slate-900 font-bold p-3 rounded-lg transition">Buscar</button>
+        </form>
+
+        <div id="result-container" class="text-center min-h-[150px] flex items-center justify-center">
+            <div id="spinner" class="spinner hidden"></div>
+            <div id="error-message" class="text-red-400 font-semibold hidden"></div>
+            <div id="weather-result" class="hidden w-full">
+                <h2 id="city-name" class="text-4xl font-bold"></h2>
+                <div class="flex items-center justify-center my-4">
+                    <img id="weather-icon" src="" alt="Ícone do clima" class="w-20 h-20">
+                    <p id="temperature" class="text-6xl font-thin ml-4"></p>
+                </div>
+                <p id="description" class="text-xl text-slate-300 capitalize"></p>
+                <div class="mt-6 grid grid-cols-2 gap-4 text-left bg-slate-900/50 p-4 rounded-lg">
+                    <p><strong>Umidade:</strong> <span id="humidity"></span></p>
+                    <p><strong>Vento:</strong> <span id="wind"></span></p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const form = document.getElementById('weather-form');
+        const cityInput = document.getElementById('city-input');
+        const resultContainer = document.getElementById('result-container');
+        const weatherResultDiv = document.getElementById('weather-result');
+        const spinner = document.getElementById('spinner');
+        const errorMessage = document.getElementById('error-message');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const city = cityInput.value.trim();
+            if (!city) return;
+
+            // Reset UI
+            weatherResultDiv.classList.add('hidden');
+            errorMessage.classList.add('hidden');
+            spinner.classList.remove('hidden');
+
+            try {
+                const response = await fetch(`/api/weather?city=${encodeURIComponent(city)}`);
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || 'Ocorreu um erro.');
+                }
+
+                const data = await response.json();
+                displayWeather(data);
+
+            } catch (error) {
+                errorMessage.textContent = error.message;
+                errorMessage.classList.remove('hidden');
+            } finally {
+                spinner.classList.add('hidden');
+            }
+        });
+
+        function displayWeather(data) {
+            document.getElementById('city-name').textContent = data.name;
+            document.getElementById('temperature').textContent = `${Math.round(data.main.temp)}°C`;
+            document.getElementById('description').textContent = data.weather[0].description;
+            document.getElementById('weather-icon').src = `https://openweathermap.org/img/wn/${data.weather[0].icon}@2x.png`;
+            document.getElementById('humidity').textContent = `${data.main.humidity}%`;
+            document.getElementById('wind').textContent = `${(data.wind.speed * 3.6).toFixed(1)} km/h`;
+            
+            weatherResultDiv.classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>

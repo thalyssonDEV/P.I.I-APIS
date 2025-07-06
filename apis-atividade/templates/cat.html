@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API de Gatos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-white flex items-center justify-center min-h-screen p-4">
+
+    <main class="w-full max-w-lg flex flex-col items-center">
+        <div class="w-full mb-6">
+             <a href="/" class="text-cyan-400 hover:text-cyan-300">&larr; Voltar ao Início</a>
+        </div>
+       
+        <h1 class="text-4xl font-bold mb-4 text-center">Gerador de Gatos Aleatórios</h1>
+        <p class="text-slate-400 mb-8 text-center">Clique no botão para gerar uma nova imagem de um gato.</p>
+        
+        <div id="cat-container" class="w-80 h-80 md:w-96 md:h-96 bg-slate-800 rounded-lg flex items-center justify-center mb-8 overflow-hidden shadow-lg">
+            <p id="loading-text">Carregando um gatinho...</p>
+            <img id="cat-image" src="" alt="Um gato aleatório" class="w-full h-full object-cover hidden">
+        </div>
+
+        <button id="new-cat-button" class="bg-cyan-500 hover:bg-cyan-600 text-slate-900 font-bold py-3 px-6 rounded-lg transition-transform transform hover:scale-105">
+            Gerar Novo Gatinho!
+        </button>
+    </main>
+
+    <script>
+        const catContainer = document.getElementById('cat-container');
+        const loadingText = document.getElementById('loading-text');
+        const catImage = document.getElementById('cat-image');
+        const newCatButton = document.getElementById('new-cat-button');
+
+        async function fetchNewCat() {
+            // Reset UI
+            loadingText.classList.remove('hidden');
+            catImage.classList.add('hidden');
+            newCatButton.disabled = true;
+            newCatButton.textContent = 'Carregando...';
+
+            try {
+                const response = await fetch('/api/cat');
+                if (!response.ok) throw new Error('Não foi possível buscar um gato.');
+                
+                const data = await response.json();
+                const catUrl = data[0].url;
+
+                catImage.src = catUrl;
+                // Espera a imagem carregar antes de mostrar
+                catImage.onload = () => {
+                    loadingText.classList.add('hidden');
+                    catImage.classList.remove('hidden');
+                }
+            } catch (error) {
+                loadingText.textContent = error.message;
+            } finally {
+                newCatButton.disabled = false;
+                newCatButton.textContent = 'Gerar Novo Gatinho!';
+            }
+        }
+
+        // Event listener para o botão
+        newCatButton.addEventListener('click', fetchNewCat);
+
+        // Carrega o primeiro gato ao iniciar a página
+        document.addEventListener('DOMContentLoaded', fetchNewCat);
+    </script>
+</body>
+</html>
